@@ -3,6 +3,10 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 
+
+def help_text(text: str) -> str:
+    return text
+
 st.set_page_config(page_title="Simulador de deuda prudente", layout="wide")
 
 # =========================
@@ -104,31 +108,150 @@ with st.sidebar:
     seed = st.number_input("Semilla aleatoria", min_value=0, max_value=999999, value=42)
 
     st.subheader("Supuestos macro")
-    g_mean = st.slider("Crecimiento real promedio", 0.0, 0.05, 0.02, step=0.001)
-    pi_mean = st.slider("Inflación / deflactor promedio", 0.0, 0.08, 0.03, step=0.001)
-    i_mean = st.slider("Tasa de interés nominal promedio", 0.0, 0.10, 0.05, step=0.001)
-    u_mean = st.slider("Otros ajustes promedio", -0.01, 0.02, 0.003, step=0.001)
+    g_mean = st.slider(
+        "Crecimiento real promedio",
+        0.0,
+        0.05,
+        0.02,
+        step=0.001,
+        help=help_text("Tasa promedio de expansión real de la economía. Si sube, la deuda pesa menos respecto del PIB y el límite prudente tiende a aumentar."),
+    )
+    pi_mean = st.slider(
+        "Inflación / deflactor promedio",
+        0.0,
+        0.08,
+        0.03,
+        step=0.001,
+        help=help_text("Aproxima el crecimiento nominal adicional del PIB vía precios. Más inflación reduce mecánicamente la razón deuda/PIB, aunque en la realidad puede venir acompañada de otras tensiones."),
+    )
+    i_mean = st.slider(
+        "Tasa de interés nominal promedio",
+        0.0,
+        0.10,
+        0.05,
+        step=0.001,
+        help=help_text("Costo promedio de financiamiento de la deuda. Si sube, el servicio de la deuda se encarece y el límite prudente suele bajar."),
+    )
+    u_mean = st.slider(
+        "Otros ajustes promedio",
+        -0.01,
+        0.02,
+        0.003,
+        step=0.001,
+        help=help_text("Recoge necesidades de financiamiento que no pasan directamente por el balance primario: movimientos de caja, capitalizaciones, uso o acumulación de activos del Tesoro, entre otros."),
+    )
 
     st.subheader("Volatilidad")
-    g_std = st.slider("Volatilidad del crecimiento", 0.0, 0.05, 0.012, step=0.001)
-    i_std = st.slider("Volatilidad de la tasa de interés", 0.0, 0.05, 0.010, step=0.001)
-    pb_shock_std = st.slider("Volatilidad fiscal", 0.0, 0.03, 0.006, step=0.001)
-    u_std = st.slider("Volatilidad de otros ajustes", 0.0, 0.03, 0.003, step=0.001)
+    g_std = st.slider(
+        "Volatilidad del crecimiento",
+        0.0,
+        0.05,
+        0.012,
+        step=0.001,
+        help=help_text("Mide qué tan inestable es el crecimiento real. Más volatilidad implica más probabilidad de años malos y, por tanto, un menor límite prudente."),
+    )
+    i_std = st.slider(
+        "Volatilidad de la tasa de interés",
+        0.0,
+        0.05,
+        0.010,
+        step=0.001,
+        help=help_text("Refleja cuán incierto es el costo financiero de la deuda. Si aumenta, también sube el riesgo de trayectorias fiscales adversas."),
+    )
+    pb_shock_std = st.slider(
+        "Volatilidad fiscal",
+        0.0,
+        0.03,
+        0.006,
+        step=0.001,
+        help=help_text("Captura shocks sobre el balance primario: caídas de recaudación, aumentos inesperados de gasto o deterioros cíclicos."),
+    )
+    u_std = st.slider(
+        "Volatilidad de otros ajustes",
+        0.0,
+        0.03,
+        0.003,
+        step=0.001,
+        help=help_text("Representa la incertidumbre asociada a ajustes fuera del balance primario, como capitalizaciones, caja o movimientos patrimoniales."),
+    )
 
     st.subheader("Comportamiento fiscal")
-    BPMF = st.slider("Balance primario máximo factible (BPMF)", 0.0, 0.05, 0.0225, step=0.0025)
-    alpha = st.slider("Intercepto fiscal (α)", -0.01, 0.02, 0.003, step=0.001)
-    beta = st.slider("Reacción fiscal a la deuda (β)", 0.0, 0.20, 0.08, step=0.005)
-    d_bar = st.slider("Nivel de referencia de deuda", 0.10, 0.60, 0.30, step=0.01)
+    BPMF = st.slider(
+        "Balance primario máximo factible (BPMF)",
+        0.0,
+        0.05,
+        0.0225,
+        step=0.0025,
+        help=help_text("Es el mayor superávit primario que el Estado podría sostener de manera realista. Si sube, el país tendría más capacidad de ajuste frente a una deuda alta."),
+    )
+    alpha = st.slider(
+        "Intercepto fiscal (α)",
+        -0.01,
+        0.02,
+        0.003,
+        step=0.001,
+        help=help_text("Es la posición fiscal de base del modelo. Un α más alto significa que, incluso sin presión de la deuda, el balance primario tiende a ser mejor."),
+    )
+    beta = st.slider(
+        "Reacción fiscal a la deuda (β)",
+        0.0,
+        0.20,
+        0.08,
+        step=0.005,
+        help=help_text("Mide cuánto corrige el gobierno cuando la deuda sube. Si β aumenta, la política fiscal reacciona con más fuerza y el límite prudente suele elevarse."),
+    )
+    d_bar = st.slider(
+        "Nivel de referencia de deuda",
+        0.10,
+        0.60,
+        0.30,
+        step=0.01,
+        help=help_text("Es el nivel a partir del cual el modelo considera que la deuda ya es relevante para activar una reacción fiscal más intensa."),
+    )
 
     st.subheader("Criterio de prudencia")
-    required_probability = st.slider("Probabilidad mínima exigida", 0.50, 0.99, 0.83, step=0.01)
-    debt_ceiling = st.slider("Techo de deuda en la simulación", 0.40, 1.50, 0.80, step=0.05)
+    required_probability = st.slider(
+        "Probabilidad mínima exigida",
+        0.50,
+        0.99,
+        0.83,
+        step=0.01,
+        help=help_text("Define qué tan estricto eres para declarar prudente un nivel de deuda. Si la elevas, exiges más seguridad y el límite prudente tiende a caer."),
+    )
+    debt_ceiling = st.slider(
+        "Techo de deuda en la simulación",
+        0.40,
+        1.50,
+        0.80,
+        step=0.05,
+        help=help_text("Es una barrera de seguridad del ejercicio. Si una trayectoria supera este nivel, se considera que dejó de ser razonable o estable."),
+    )
 
     st.subheader("Búsqueda del límite")
-    grid_min = st.slider("Mínimo deuda inicial a probar", 0.10, 0.50, 0.20, step=0.01)
-    grid_max = st.slider("Máximo deuda inicial a probar", 0.20, 0.90, 0.50, step=0.01)
-    grid_step = st.slider("Paso de búsqueda", 0.001, 0.02, 0.005, step=0.001)
+    grid_min = st.slider(
+        "Mínimo deuda inicial a probar",
+        0.10,
+        0.50,
+        0.20,
+        step=0.01,
+        help=help_text("Límite inferior del rango donde la app buscará el nivel prudente."),
+    )
+    grid_max = st.slider(
+        "Máximo deuda inicial a probar",
+        0.20,
+        0.90,
+        0.50,
+        step=0.01,
+        help=help_text("Límite superior del rango donde la app buscará el nivel prudente. Si el resultado queda demasiado bajo o alto, conviene ampliar este rango."),
+    )
+    grid_step = st.slider(
+        "Paso de búsqueda",
+        0.001,
+        0.02,
+        0.005,
+        step=0.001,
+        help=help_text("Precisión de la búsqueda. Pasos más pequeños entregan un resultado más fino, pero hacen más lenta la app."),
+    )
 
 params = {
     "horizon": horizon,
