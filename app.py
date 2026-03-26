@@ -308,17 +308,3 @@ quick3.markdown(
 )
 
 st.divider()
-
-st.markdown(
-    """
-### Cómo usar esta app en GitHub y Streamlit Cloud
-1. Guarda este archivo como `app.py`.
-2. Crea un `requirements.txt` con:
-   - `streamlit`
-   - `numpy`
-   - `pandas`
-   - `matplotlib`
-3. Súbelo a GitHub.
-4. Despliega en Streamlit Cloud apuntando al archivo `app.py`.
-"""
-)
