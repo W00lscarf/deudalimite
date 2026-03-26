@@ -89,7 +89,7 @@ def pct(x):
 # Interfaz
 # =========================
 
-st.title("Simulador de deuda prudente estilo CFA (simplificado)")
+st.title("Simulador de deuda prudente")
 st.markdown(
     """
 Esta app permite **mover las palancas** del modelo para ver cómo cambia el **nivel prudente de deuda neta**.
